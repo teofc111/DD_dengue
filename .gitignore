@@ -1,6 +1,7 @@
 # temp stuff
 temp/
 oldies/
+.virtual_documents/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
