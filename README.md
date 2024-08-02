@@ -1,29 +1,54 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 3: Predictive Modelling of HDB Resale Flat Values
+# DrivenData - DengAI: Predicting Disease Spread Competition
 
-## Background and Objective
-Recent years have seen a rise in emotional distress among youths, prompting many to seek support on online forums and social media platforms. A text classification machine learning program can help identify signs of distress in these posts, enabling timely intervention from counselors or healthcare professionals. This project explores and compares various machine learning techniques for this text classification task. Models considered include Naive Bayes, KNN, Logistic Regression, and XGBoost, combined with vectorization methods like Count Vectorizers and Word2Vec.
+## Background
+Dengue fever is a significant global health concern, especially in tropical and subtropical regions where the Aedes mosquito, the primary vector for the disease, thrives. The accurate prediction of dengue cases can assist in early warning systems, enabling health authorities to implement timely measures such as vector control and public health advisories. In this notebook, we present an approach for dengue spread prediction, developed for submission in a [DrivenData data science competition](https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/page/80/). Utilizing the provided dataset, which includes weather conditions (e.g., temperature, humidity, rainfall) and vegetation cover measured by the Normalized Difference Vegetation Index (NDVI), the objective is to forecast the weekly number of dengue cases in two cities: San Juan, Puerto Rico, and Iquitos, Peru.
+
+_This submission placed in the 39th position on the leaderboard (teofc111), ranking within the top 1% of [submissions](https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/leaderboard/)._
 
 ## Approach
-Text posts from a subreddit on mental health [r\mentalhealth](https://www.reddit.com/r/mentalhealth/) and on casual conversations [r\casualconversation](https://www.reddit.com/r/CasualConversation/) are used for model training with the former representing posts showing signs of emotional distress, and the latter for posts without such signs. The PRAW package is used to retrieve these posts via the reddit API. A simple app is created on streamlit to illustrate deployment possibilities. This app can be found in the './app' directory and can be launched by running `streamlit run Post_Classifier.py`. A similar methodology can be employed for other social media platforms or online forums.
+__Auto-regression with XGBoost:__
+In this notebook, an autoregressive model is implemented using XGBoost, making use of lagged features as well as lagged target values for training.
+
+__Multi-step Forecasting Treatment:__
+Given the multi-step forecasting nature of the problem, special techniques were applied to adapt XGBoost for predicting multiple time points ahead, to compensate for the lack of native multi-step forecasting support. Specifically, a multi-step prediction algorithm is used to make sequential predictions at every timestep, simultaneously updating the subsequent timesteps' lagged target values with the newly predicted target value from the current timestep.
+
+__Hyperparameter Tuning and Model Construction:__
+The XGBoost model hyperparameters and lags to adopt were selected via cross-validation. As an XGBoost model is trained under the assumption of perfect knowledge of lagged target values, as the correct lagged target values are supplied for every timestep as training data. This training objective thus naturally conflicts with the multi-step forecasting scenario, due to uncertainties associated with lagged target used for later timesteps. In this notebook, we account for these effects (elaborated below) when selecting the appropriate model parameters.
 
 ## Dataset
-The API retrieved dataset for the two classes are saved in 'subreddit_casualconversation_20240614.csv' and 'subreddit_mentalhealth_20240614.csv', which are combined and pre-processed to give the `df_raw` dataframe below. `df_raw` is to be further transformed for the corresponding machine learning models.
+The dataset is freely available at [DrivenData](#https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/). The data description is reproduced below for reference.
 
-| Feature  | Type | Description                                                                                                  |
-|----------|------|--------------------------------------------------------------------------------------------------------------|
-| id       | obj  | Unique ID identifying test reddit post                                                                       |
-| title    | obj  | Title of reddit post                                                                                         |
-| body     | obj  | Main text of reddit post                                                                                     |
-| comments | obj  | Comments and subcomments to reddit post                                                                      |
-| target   | obj  | Content type of text as target for text classification system, either 'mentalhealth' or 'casualconversation' |
-| url      | obj  | URL of original reddit post                                                                                  |
+| Feature                             | Type | Source | Description                                                                                     |
+|-------------------------------------|------|--------|-------------------------------------------------------------------------------------------------|
+| city                                |  obj    |    NA    | City abbreviations: sj for San Juan and iq for Iquitos                                          |
+| week_start_date                     |  obj    |    NA    | Date given in yyyy-mm-dd format                                                                 |
+| station_max_temp_c                  |  float    |  NOAA's GHCN      | Maximum temperature                                                                             |
+| station_min_temp_c                  |  float    |  NOAA's GHCN      | Minimum temperature                                                                             |
+| station_avg_temp_c                  |  float    |  NOAA's GHCN      | Average temperature                                                                             |
+| station_precip_mm                   |  float    |  NOAA's GHCN      | Total precipitation                                                                             |
+| station_diur_temp_rng_c             |  float    |  NOAA's GHCN      | Diurnal temperature range                                                                       |
+| precipitation_amt_mm                |  float    |  PERSIANN satellite      | Total precipitation                                                                             |
+| reanalysis_sat_precip_amt_mm        |  float    |  NOAA's NCEP      | Total precipitation                                                                             |
+| reanalysis_dew_point_temp_k         |  float    |  NOAA's NCEP      | Mean dew point temperature                                                                      |
+| reanalysis_air_temp_k               |  float    |  NOAA's NCEP      | Mean air temperature                                                                            |
+| reanalysis_relative_humidity_percent|  float    |  NOAA's NCEP      | Mean relative humidity                                                                          |
+| reanalysis_specific_humidity_g_per_kg |  float    |  NOAA's NCEP      | Mean specific humidity                                                                          |
+| reanalysis_precip_amt_kg_per_m2     |  float    |  NOAA's NCEP      | Total precipitation                                                                             |
+| reanalysis_max_air_temp_k           |  float    |  NOAA's NCEP      | Maximum air temperature                                                                         |
+| reanalysis_min_air_temp_k           |  float    |  NOAA's NCEP      | Minimum air temperature                                                                         |
+| reanalysis_avg_temp_k               |  float    |  NOAA's NCEP      | Average air temperature                                                                         |
+| reanalysis_tdtr_k                   |  float    |  NOAA's NCEP      | Diurnal temperature range                                                                       |
+| ndvi_se                             |  float    |  NOAA's CDR      | Pixel southeast of city centroid                                                                |
+| ndvi_sw                             |  float    |  NOAA's CDR      | Pixel southwest of city centroid                                                                |
+| ndvi_ne                             |  float    |  NOAA's CDR      | Pixel northeast of city centroid                                                                |
+| ndvi_nw                             |  float    |  NOAA's CDR      | Pixel northwest of city centroid                                                                |
 
+## Conclusion and Future Work
+While precise prediction is difficult, the autoregressive XGBoost model appears to be able to capture major trends in dengue cases, as shown in the selected fold's performance in the training/validation plot below.
 
-## Findings
-The F1-scores of the different models used are show in the bar chart below. For the current case of identifying text posts with signs of psychological distress, the  model comparison here does not indicate significant differences in performance for the non-KNN models. That said, a relatively small dataset of approximately 1,000 datapoints in each category was used for model training. Furthermore, relatively little pre-processing has been done, beyond the application of generic vectorizers, stemming, and stop word removals. Therefore, there is likely room for improvement for each model, depending on the use case (e.g. flagging student text posts for referral to university counselors for further action), the predictive power required (e.g. precision, recall, etc), and the computational power available for inference. 
+<img src=".\data\train_val_fold3.png" alt="Training and validation prediction vs ground truth comparison" width="800"/>
 
-
-<img src=".\data\f1_scores.png" alt="F1-scores of Various Models" width="800"/>
-
-
-For further refinement, one could improvement performance by gathering more data as the current dataset is relatively modest for an NLP project. Additionally, further data pre-processing will certainly be advantageous. For example, emojis are frequently used in social media and can be properly transformed to extract better contextual information. Furthermore, the texts may contain weblinks, personal sign off messages, bot-generated messages, foreign (non-English in the current context) characters, etc, which may reduce the quality of the dataset. If computational resources are adequate for deep learning approaches, one could also experiment with different pre-trained BERT models, or other architectures altogether like GPT.
+For future work, I would like to explore the following:
+1. Auto-correlation in long-range forecasting - Time series split, as opposed to traditional K-fold cross validation approaches, is performed here to prevent data leakage. However, for the time scale in this scenario for long-range forecasting, the correlation between time points that are far enough apart should be minimal. The use of (unrandomized) K-fold cross validation could provide healthier train set sizes for a more effective parameter tuning process.
+2. Traditional time series treatment - In this notebook, I have performed smoothing for the lagged feature values. In view of the proven track record of more traditional time-series processing (e.g. SARIMAX), I would like to apply moving averages and differencing to the lagged target values.
+3. Ensemble approaches - Ensembling is an extremely powerful technique that could quickly improve model performance. The use multiple perturbed versions of the current XGBoost model, or of Catboost and LightGBM models, can be used to verify if this is the case for time series problems.
