@@ -1,0 +1,10 @@
+catboost==1.2.5
+matplotlib==3.9.2
+numba==0.60.0
+numpy==2.1.0
+pandas==2.2.2
+scikit_learn==1.5.1
+scipy==1.14.1
+seaborn==0.13.2
+statsmodels==0.14.2
+xgboost==2.1.1
